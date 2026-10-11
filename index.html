@@ -1,0 +1,146 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Food Scanner</title>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
+</head>
+<body style="font-family:sans-serif;max-width:420px;margin:auto;padding:16px">
+  <h2 style="text-align:center">Food Scanner</h2>
+  <video id="video" style="width:100%;background:#000" muted playsinline></video>
+  <p style="text-align:center">
+    <button id="start">Start camera</button>
+    <input id="code" placeholder="or type barcode" inputmode="numeric">
+    <button id="go">Check</button>
+  </p>
+  <p id="status" style="color:#666;text-align:center"></p>
+  <div id="out"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const API = 'https://world.openfoodfacts.org/api/v2/';
+const FIELDS = 'code,product_name,brands,categories_tags,nutriscore_grade,nova_group,additives_tags';
+let lastCode = '';
+
+// Simplified additive risk list (approximation of Yuka-style ratings). Anything not listed = low.
+const HIGH = ['e102','e104','e110','e122','e124','e129','e171','e249','e250','e251','e252','e320','e321'];
+const MEDIUM = ['e150c','e150d','e211','e220','e221','e222','e223','e224','e225','e226','e227','e228',
+  'e338','e339','e340','e341','e407','e407a','e450','e451','e452','e621','e950','e951','e954','e955'];
+
+function additiveRisk(tag) {
+  const e = tag.replace('en:', '').toLowerCase();
+  if (HIGH.includes(e)) return 'high';
+  if (MEDIUM.includes(e)) return 'medium';
+  return 'low';
+}
+
+function scoreProduct(p) {
+  let score = { a: 90, b: 75, c: 55, d: 35, e: 15 }[p.nutriscore_grade];
+  if (score === undefined && p.nova_group) score = { 1: 90, 2: 70, 3: 50, 4: 25 }[p.nova_group];
+  if (score === undefined) return null;
+  const penalty = { high: 10, medium: 5, low: 1 };
+  const total = (p.additives_tags || []).reduce((sum, t) => sum + penalty[additiveRisk(t)], 0);
+  return Math.max(0, score - Math.min(total, 30));
+}
+
+function rating(score) {
+  return score >= 75 ? ['Excellent', '#1e8e3e'] :
+         score >= 50 ? ['Good', '#7cb342'] :
+         score >= 25 ? ['Poor', '#f9a825'] : ['Bad', '#d93025'];
+}
+
+const RISK_COLOR = { high: '#d93025', medium: '#f9a825', low: '#1e8e3e' };
+
+// Find better products in the same category (most specific category first)
+async function findAlternatives(p, myScore) {
+  const cats = (p.categories_tags || []).slice().reverse().slice(0, 3);
+  for (const cat of cats) {
+    const url = API + 'search?categories_tags=' + encodeURIComponent(cat) +
+      '&fields=' + FIELDS + '&sort_by=unique_scans_n&page_size=40';
+    const data = await (await fetch(url)).json();
+    const better = (data.products || [])
+      .filter(x => x.code !== p.code && x.product_name)
+      .map(x => ({ ...x, score: scoreProduct(x) }))
+      .filter(x => x.score !== null && x.score > myScore)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+    if (better.length) return better;
+  }
+  return [];
+}
+
+async function check(code) {
+  code = code.trim();
+  if (code.length === 12) code = '0' + code;   // USA UPC-A -> EAN-13
+  $('status').textContent = 'Looking up ' + code + '...';
+  $('out').innerHTML = '';
+
+  try {
+    const data = await (await fetch(API + 'product/' + code + '.json?fields=' + FIELDS)).json();
+    if (data.status !== 1) { $('status').textContent = 'Barcode ' + code + ': product not found'; return; }
+    const p = data.product;
+    p.code = code;
+    $('status').textContent = '';
+
+    const score = scoreProduct(p);
+    let html = '<h3>' + esc(p.product_name || code) + '</h3><p>' + esc(p.brands || '') + '</p>';
+    if (score === null) {
+      html += '<p>Not enough data to score this product.</p>';
+    } else {
+      const [label, color] = rating(score);
+      html += '<h1 style="color:' + color + '">' + score + '/100 ' + label + '</h1>';
+    }
+
+    const adds = p.additives_tags || [];
+    html += '<h4>Additives (' + adds.length + ')</h4>';
+    if (!adds.length) html += '<p>None found</p>';
+    else html += '<ul>' + adds.map(t => {
+      const r = additiveRisk(t);
+      return '<li>' + esc(t.replace('en:', '').toUpperCase()) +
+        ' - <b style="color:' + RISK_COLOR[r] + '">' + r + ' risk</b></li>';
+    }).join('') + '</ul>';
+    $('out').innerHTML = html;
+
+    if (score !== null && score < 90) {
+      $('status').textContent = 'Looking for better alternatives...';
+      const alts = await findAlternatives(p, score);
+      $('status').textContent = '';
+      let h = '<h4>Better alternatives</h4>';
+      if (!alts.length) h += '<p>No better product found in this category.</p>';
+      else h += '<ul>' + alts.map(a => {
+        const [label, color] = rating(a.score);
+        return '<li><a href="#" data-code="' + esc(a.code) + '">' + esc(a.product_name) + '</a> ' +
+          esc(a.brands || '') + ' - <b style="color:' + color + '">' + a.score + ' ' + label + '</b></li>';
+      }).join('') + '</ul>';
+      $('out').insertAdjacentHTML('beforeend', h);
+    }
+  } catch (e) {
+    $('status').textContent = 'Error: ' + e.message;
+  }
+}
+
+// click an alternative to check it
+$('out').onclick = e => {
+  const c = e.target.dataset && e.target.dataset.code;
+  if (c) { e.preventDefault(); $('code').value = c; check(c); }
+};
+
+$('go').onclick = () => check($('code').value);
+
+$('start').onclick = async () => {
+  if (!window.ZXingBrowser) { $('status').textContent = 'Scanner library failed to load'; return; }
+  try {
+    const reader = new ZXingBrowser.BrowserMultiFormatReader();
+    await reader.decodeFromVideoDevice(undefined, $('video'), r => {
+      if (r && r.getText() !== lastCode) { lastCode = r.getText(); check(lastCode); }
+    });
+    $('status').textContent = 'Camera on - hold the barcode steady';
+  } catch (e) {
+    $('status').textContent = 'Camera error: ' + e.message;
+  }
+};
+</script>
+</body>
+</html>

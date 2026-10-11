@@ -6,35 +6,62 @@
 <title>Food Scanner</title>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
 <style>
-  .scanline {
-    position: absolute; left: 0; width: 100%; height: 2px;
-    background: #00e676; box-shadow: 0 0 8px 2px #00e676;
-    animation: scan 1.6s ease-in-out infinite alternate;
-  }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; background: #eef1f4; margin: 0; padding: 16px; color: #1f2933; }
+  .wrap { max-width: 420px; margin: auto; }
+  h2 { text-align: center; margin: 4px 0 14px; }
+  .card { background: #fff; border: 2px solid #cfd6dd; border-radius: 14px; padding: 14px; margin: 14px 0;
+          box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+  .cam { position: relative; height: 200px; background: #000; border: 3px solid #263238;
+         border-radius: 14px; overflow: hidden; }
+  .cam video { width: 100%; height: 100%; object-fit: cover; }
+  #frame { position: absolute; top: 25%; left: 10%; width: 80%; height: 50%; border: 2px solid #f44336;
+           border-radius: 8px; box-shadow: 0 0 0 999px rgba(0,0,0,.35); overflow: hidden; }
+  .scanline { position: absolute; left: 0; width: 100%; height: 2px;
+              background: var(--c, #f44336); box-shadow: 0 0 8px 2px var(--c, #f44336);
+              animation: scan 1.6s ease-in-out infinite alternate; }
   @keyframes scan { from { top: 0; } to { top: 100%; } }
+  .input-row { display: flex; gap: 8px; }
+  input { flex: 1; padding: 11px; border: 2px solid #b8c1ca; border-radius: 10px; font-size: 16px; min-width: 0; }
+  button { padding: 11px 18px; border: 0; border-radius: 10px; background: #263238; color: #fff;
+           font-size: 16px; cursor: pointer; }
+  #status { text-align: center; color: #5f6b76; min-height: 1.2em; margin: 8px 0; }
+  .prod { display: flex; gap: 14px; align-items: center; }
+  .prod img { width: 64px; height: 64px; object-fit: contain; border: 1px solid #cfd6dd; border-radius: 10px; background: #fff; }
+  .score { width: 84px; height: 84px; border-radius: 50%; border: 6px solid; flex: none;
+           display: flex; flex-direction: column; align-items: center; justify-content: center;
+           font-size: 26px; font-weight: 700; line-height: 1; }
+  .score small { font-size: 12px; font-weight: 400; color: #5f6b76; }
+  .muted { color: #5f6b76; font-size: 14px; }
+  .card h4 { margin: 0 0 8px; }
+  .chip { display: inline-block; padding: 4px 10px; border: 1px solid; border-radius: 999px;
+          font-size: 13px; font-weight: 600; margin: 3px 4px 0 0; }
+  .alt { display: flex; justify-content: space-between; align-items: center; gap: 10px; cursor: pointer;
+         border: 2px solid #cfd6dd; border-radius: 10px; padding: 10px; margin-top: 8px; }
+  .alt:hover { border-color: #263238; }
+  .alt b.n { font-size: 18px; }
 </style>
 </head>
-<body style="font-family:sans-serif;max-width:420px;margin:auto;padding:16px">
-  <h2 style="text-align:center">Food Scanner</h2>
-  <div style="position:relative;height:180px;background:#000;border-radius:8px;overflow:hidden">
-    <video id="video" style="width:100%;height:100%;object-fit:cover" muted playsinline></video>
-    <div style="position:absolute;top:25%;left:10%;width:80%;height:50%;border:2px solid #fff;border-radius:6px;box-shadow:0 0 0 999px rgba(0,0,0,.35);overflow:hidden">
-      <div class="scanline"></div>
-    </div>
+<body>
+<div class="wrap">
+  <h2>🥗 Food Scanner</h2>
+  <div class="cam">
+    <video id="video" muted playsinline></video>
+    <div id="frame"><div class="scanline"></div></div>
   </div>
-  <p style="text-align:center">
-    <button id="start">Start camera</button>
+  <div class="card input-row">
     <input id="code" placeholder="or type barcode" inputmode="numeric">
     <button id="go">Check</button>
-  </p>
-  <p id="status" style="color:#666;text-align:center"></p>
+  </div>
+  <p id="status"></p>
   <div id="out"></div>
+</div>
 
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const API = 'https://world.openfoodfacts.org/api/v2/';
-const FIELDS = 'code,product_name,brands,categories_tags,nutriscore_grade,nova_group,additives_tags';
+const FIELDS = 'code,product_name,brands,image_front_small_url,categories_tags,nutriscore_grade,nova_group,additives_tags';
 let lastCode = '';
 
 // Simplified additive risk list (approximation of Yuka-style ratings). Anything not listed = low.
@@ -98,36 +125,40 @@ async function check(code) {
     $('status').textContent = '';
 
     const score = scoreProduct(p);
-    let html = '<h3>' + esc(p.product_name || code) + '</h3><p>' + esc(p.brands || '') + '</p>';
-    if (score === null) {
-      html += '<p>Not enough data to score this product.</p>';
-    } else {
-      const [label, color] = rating(score);
-      html += '<h1 style="color:' + color + '">' + score + '/100 ' + label + '</h1>';
-    }
+    const [label, color] = score === null ? ['Not enough data', '#8895a1'] : rating(score);
+    const img = p.image_front_small_url ? '<img src="' + esc(p.image_front_small_url) + '">' : '';
+    let html = '<div class="card"><div class="prod">' +
+      '<div class="score" style="border-color:' + color + ';color:' + color + '">' +
+        (score === null ? '?' : score + '<small>/100</small>') + '</div>' +
+      '<div><b>' + esc(p.product_name || code) + '</b><br>' +
+      '<span class="muted">' + esc(p.brands || '') + '</span><br>' +
+      '<b style="color:' + color + '">' + label + '</b></div>' + img +
+      '</div></div>';
 
     const adds = p.additives_tags || [];
-    html += '<h4>Additives (' + adds.length + ')</h4>';
-    if (!adds.length) html += '<p>None found</p>';
-    else html += '<ul>' + adds.map(t => {
-      const r = additiveRisk(t);
-      return '<li>' + esc(t.replace('en:', '').toUpperCase()) +
-        ' - <b style="color:' + RISK_COLOR[r] + '">' + r + ' risk</b></li>';
-    }).join('') + '</ul>';
+    html += '<div class="card"><h4>Additives (' + adds.length + ')</h4>';
+    if (!adds.length) html += '<span class="muted">None found</span>';
+    else html += adds.map(t => {
+      const r = additiveRisk(t), c = RISK_COLOR[r];
+      return '<span class="chip" style="color:' + c + ';border-color:' + c + ';background:' + c + '1a">' +
+        esc(t.replace('en:', '').toUpperCase()) + ' · ' + r + '</span>';
+    }).join('');
+    html += '</div>';
     $('out').innerHTML = html;
 
     if (score !== null && score < 90) {
       $('status').textContent = 'Looking for better alternatives...';
       const alts = await findAlternatives(p, score);
       $('status').textContent = '';
-      let h = '<h4>Better alternatives</h4>';
-      if (!alts.length) h += '<p>No better product found in this category.</p>';
-      else h += '<ul>' + alts.map(a => {
-        const [label, color] = rating(a.score);
-        return '<li><a href="#" data-code="' + esc(a.code) + '">' + esc(a.product_name) + '</a> ' +
-          esc(a.brands || '') + ' - <b style="color:' + color + '">' + a.score + ' ' + label + '</b></li>';
-      }).join('') + '</ul>';
-      $('out').insertAdjacentHTML('beforeend', h);
+      let h = '<div class="card"><h4>Better alternatives</h4>';
+      if (!alts.length) h += '<span class="muted">No better product found in this category.</span>';
+      else h += alts.map(a => {
+        const [l, c] = rating(a.score);
+        return '<div class="alt" data-code="' + esc(a.code) + '">' +
+          '<div><b>' + esc(a.product_name) + '</b><br><span class="muted">' + esc(a.brands || '') + '</span></div>' +
+          '<div style="text-align:right;color:' + c + '"><b class="n">' + a.score + '</b><br>' + l + '</div></div>';
+      }).join('');
+      $('out').insertAdjacentHTML('beforeend', h + '</div>');
     }
   } catch (e) {
     $('status').textContent = 'Error: ' + e.message;
@@ -136,11 +167,18 @@ async function check(code) {
 
 // click an alternative to check it
 $('out').onclick = e => {
-  const c = e.target.dataset && e.target.dataset.code;
-  if (c) { e.preventDefault(); $('code').value = c; check(c); }
+  const el = e.target.closest('[data-code]');
+  if (el) { $('code').value = el.dataset.code; check(el.dataset.code); }
 };
 
 $('go').onclick = () => check($('code').value);
+
+const COLORS = { red: '#f44336', yellow: '#ffc107', green: '#00e676' };
+let holdUntil = 0;
+function setState(s) {
+  $('frame').style.setProperty('--c', COLORS[s]);
+  $('frame').style.borderColor = COLORS[s];
+}
 
 let running = false;
 async function startCamera() {
@@ -156,22 +194,33 @@ async function startCamera() {
       width: { ideal: 1280 }, height: { ideal: 720 },
       advanced: [{ focusMode: 'continuous' }]
     } };
-    await reader.decodeFromConstraints(constraints, $('video'), r => {
+    await reader.decodeFromConstraints(constraints, $('video'), (r, err) => {
+      // line color: red = nothing, yellow = barcode seen but not readable yet, green = read OK
+      const now = Date.now();
+      const kind = err && (err.getKind ? err.getKind() : err.name);
+      if (r) {
+        setState('green'); holdUntil = now + 1500;
+      } else if (kind === 'ChecksumException' || kind === 'FormatException') {
+        if (now >= holdUntil) { setState('yellow'); holdUntil = now + 500; }
+      } else if (now >= holdUntil) {
+        setState('red');
+      }
+
       if (r && r.getText() !== lastCode) {
         lastCode = r.getText();
+        $('code').value = lastCode;   // show the scanned number in the input box
         if (navigator.vibrate) navigator.vibrate(100);
         setTimeout(() => { lastCode = ''; }, 3000);   // allow re-scanning the same item
         check(lastCode);
       }
     });
-    $('status').textContent = 'Camera on - put the barcode inside the box';
+    $('status').textContent = '';
   } catch (e) {
     running = false;
-    $('status').textContent = 'Camera error: ' + e.message + ' - allow camera access, then tap Start camera';
+    $('status').textContent = 'Camera error: ' + e.message + ' - allow camera access and reload the page';
   }
 }
 
-$('start').onclick = startCamera;
 startCamera();   // start automatically on page load; scanning is then automatic
 </script>
 </body>

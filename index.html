@@ -34,12 +34,72 @@
   .score small { font-size: 12px; font-weight: 400; color: #5f6b76; }
   .muted { color: #5f6b76; font-size: 14px; }
   .card h4 { margin: 0 0 8px; }
-  .chip { display: inline-block; padding: 4px 10px; border: 1px solid; border-radius: 999px;
-          font-size: 13px; font-weight: 600; margin: 3px 4px 0 0; }
   .alt { display: flex; justify-content: space-between; align-items: center; gap: 10px; cursor: pointer;
          border: 2px solid #cfd6dd; border-radius: 10px; padding: 10px; margin-top: 8px; }
   .alt:hover { border-color: #263238; }
   .alt b.n { font-size: 18px; }
+  .counts { margin-bottom: 8px; }
+  .pill { display: inline-block; padding: 3px 9px; border: 1px solid; border-radius: 999px; font-size: 12px;
+          font-weight: 700; margin: 2px 4px 2px 0; white-space: nowrap; }
+  .pill.child { color: #6a1b9a; border-color: #6a1b9a; background: #6a1b9a14; }
+  .add { border: 2px solid #e1e6eb; border-radius: 10px; margin-top: 8px; background: #fff; }
+  .add[open] { border-color: #263238; }
+  .add-sum { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 11px;
+             cursor: pointer; list-style: none; }
+  .add-sum::-webkit-details-marker { display: none; }
+  .pills { text-align: right; }
+  .add-body { padding: 4px 12px 12px; border-top: 1px solid #e1e6eb; font-size: 14px; }
+  .add-body h5 { margin: 12px 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: #5f6b76; }
+  .note { background: #f3e9f8; border-left: 4px solid #6a1b9a; padding: 8px 10px; margin-top: 8px; border-radius: 6px; font-size: 13px; }
+  .cite { border-left: 3px solid #cfd6dd; padding: 2px 0 2px 10px; margin: 10px 0; }
+  .src { display: inline-block; background: #263238; color: #fff; border-radius: 4px; padding: 1px 7px; font-size: 11px; font-weight: 700; }
+  .finding { margin-top: 4px; }
+  .ref-link { display: inline-block; margin-top: 4px; font-size: 13px; font-weight: 600; color: #1a56db; }
+  .scorewrap { position: relative; flex: none; }
+  .info { position: absolute; top: -6px; right: -8px; width: 26px; height: 26px; border-radius: 50%; padding: 0;
+          background: #263238; color: #fff; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3);
+          font: italic 700 15px Georgia, serif; line-height: 1; cursor: pointer; }
+  .info:hover, .info:focus-visible { background: #1a56db; outline: none; }
+  .info::after { content: attr(data-tip); position: absolute; bottom: 135%; right: -4px; background: #263238; color: #fff;
+                 padding: 6px 9px; border-radius: 6px; font: normal 400 12px system-ui, sans-serif; white-space: nowrap;
+                 opacity: 0; pointer-events: none; transition: opacity .12s; }
+  .info:hover::after, .info:focus-visible::after { opacity: 1; }
+
+  /* the "i" popup */
+  .modal { position: fixed; inset: 0; background: rgba(15,23,32,.55); display: flex; align-items: center;
+           justify-content: center; z-index: 50; }
+  .modal[hidden] { display: none; }
+  .sheet { position: relative; background: #fff; width: calc(100% - 32px); max-width: 370px; max-height: 90vh;
+           overflow-y: auto; padding: 12px 14px 14px; border-radius: 14px; box-shadow: 0 8px 28px rgba(0,0,0,.3); }
+  .close { position: absolute; top: 7px; right: 8px; width: 24px; height: 24px; padding: 0; border-radius: 50%;
+           background: #eef1f4; color: #263238; font-size: 16px; line-height: 1; }
+  .calc-top { margin: 0 0 2px; font-size: 11px; }
+  .calc-top .big { font-size: 26px; font-weight: 800; }
+  .scalewrap { position: relative; margin: 10px 0 2px; }
+  .scale { display: flex; height: 7px; border-radius: 4px; overflow: hidden; }
+  .scale i { flex: 1; }
+  .mark { position: absolute; top: -4px; width: 3px; height: 15px; background: #263238; border-radius: 2px;
+          transform: translateX(-50%); box-shadow: 0 0 0 1.5px #fff; }
+  .ticks { position: relative; height: 14px; margin-top: 3px; font-size: 9px; font-weight: 800; color: #263238; }
+  .ticks span { position: absolute; transform: translateX(-50%); }
+  .ticks span::before { content: ''; position: absolute; top: -4px; left: 50%; width: 2px; height: 3px;
+                        background: #263238; transform: translateX(-50%); }
+  .ticks span:first-child { transform: none; }
+  .ticks span:first-child::before { left: 0; }
+  .ticks span:last-child { transform: translateX(-100%); }
+  .ticks span:last-child::before { left: 100%; }
+  .scale-l { display: flex; font-size: 8px; color: #5f6b76; }
+  .scale-l span { flex: 1; text-align: center; }
+  .calc { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 8px; border: 1px solid #cfd6dd;
+          border-radius: 8px; overflow: hidden; }
+  .calc th { background: #eef2f6; text-align: left; font-size: 8px; text-transform: uppercase; letter-spacing: .05em;
+             color: #5f6b76; padding: 4px 8px; border-bottom: 1px solid #cfd6dd; }
+  .calc th.v { text-align: right; border-left: 1px solid #cfd6dd; }
+  .calc td { padding: 6px 8px; border-bottom: 1px solid #e1e6eb; vertical-align: top; font-size: 11px; }
+  .calc tr:last-child td { border-bottom: 0; }
+  .calc td.v { text-align: right; font-size: 15px; font-weight: 800; white-space: nowrap; min-width: 40px;
+               border-left: 1px solid #cfd6dd; }
+  .calc .why { font-size: 9px; color: #5f6b76; font-weight: 400; margin-top: 1px; line-height: 1.35; }
 </style>
 </head>
 <body>
@@ -57,6 +117,13 @@
   <div id="out"></div>
 </div>
 
+<div id="modal" class="modal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="How the score is calculated">
+    <button id="modal-close" class="close" aria-label="Close">&times;</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -64,25 +131,59 @@ const API = 'https://world.openfoodfacts.org/api/v2/';
 const FIELDS = 'code,product_name,brands,image_front_small_url,categories_tags,nutriscore_grade,nova_group,additives_tags';
 let lastCode = '';
 
-// Simplified additive risk list (approximation of Yuka-style ratings). Anything not listed = low.
-const HIGH = ['e102','e104','e110','e122','e124','e129','e171','e249','e250','e251','e252','e320','e321'];
-const MEDIUM = ['e150c','e150d','e211','e220','e221','e222','e223','e224','e225','e226','e227','e228',
-  'e338','e339','e340','e341','e407','e407a','e450','e451','e452','e621','e950','e951','e954','e955'];
+// Additive ratings: additives-app.json (Sito, sito.kids/additives). Loaded once when the page opens.
+let ADD = {}, addMeta = {}, addFailed = false;
+const dataReady = fetch('additives-app.json')
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d => { d.additives.forEach(a => { ADD[a.e_number.toLowerCase()] = a; }); addMeta = d; })
+  .catch(() => { addFailed = true; });
 
-function additiveRisk(tag) {
+// Open Food Facts writes tags like "en:e322i"; our table may only have "e322"
+function findAdditive(tag) {
   const e = tag.replace('en:', '').toLowerCase();
-  if (HIGH.includes(e)) return 'high';
-  if (MEDIUM.includes(e)) return 'medium';
-  return 'low';
+  if (ADD[e]) return ADD[e];
+  const base = e.replace(/[a-z]+$/, '');          // e322i -> e322
+  if (ADD[base]) return ADD[base];
+  if (/^e14\d\d/.test(e)) return ADD['e14xx'] || null;   // modified starches are one group
+  return null;
+}
+
+// one row per additive (e322 and e322i are the same thing), rated or not
+function resolveAdditives(tags) {
+  const seen = {}, out = [];
+  (tags || []).forEach(t => {
+    const info = findAdditive(t), key = info ? info.e_number : t;
+    if (seen[key]) return;
+    seen[key] = 1;
+    out.push({ tag: t, info });
+  });
+  return out;
+}
+
+// Works out the score step by step, so the "i" popup can show every step
+function scoreBreakdown(p) {
+  let base = { a: 90, b: 75, c: 55, d: 35, e: 15 }[p.nutriscore_grade], label, nutri = true;
+  if (base !== undefined) label = 'Nutri-Score ' + p.nutriscore_grade.toUpperCase();
+  else if (p.nova_group) {            // many US products have no Nutri-Score
+    base = { 1: 90, 2: 70, 3: 50, 4: 25 }[p.nova_group];
+    label = 'NOVA group ' + p.nova_group; nutri = false;
+  }
+  if (base === undefined) return null;
+  // each rated additive removes points: high 30, moderate 15, low 6, none 0 (from the table); capped at 40
+  const items = resolveAdditives(p.additives_tags).map(x => ({
+    name: x.info ? x.info.name : x.tag.replace('en:', '').toUpperCase(),
+    e: x.info ? x.info.e_number : '',
+    cls: x.info ? x.info.risk_class : 'unrated',
+    child: x.info ? x.info.child_flag : false,
+    points: x.info ? x.info.points_removed : 0
+  })).sort((a, b) => b.points - a.points);
+  const raw = items.reduce((sum, i) => sum + i.points, 0), applied = Math.min(raw, 40);
+  return { base, label, nutri, items, raw, applied, capped: raw > 40, final: Math.max(0, base - applied) };
 }
 
 function scoreProduct(p) {
-  let score = { a: 90, b: 75, c: 55, d: 35, e: 15 }[p.nutriscore_grade];
-  if (score === undefined && p.nova_group) score = { 1: 90, 2: 70, 3: 50, 4: 25 }[p.nova_group];
-  if (score === undefined) return null;
-  const penalty = { high: 10, medium: 5, low: 1 };
-  const total = (p.additives_tags || []).reduce((sum, t) => sum + penalty[additiveRisk(t)], 0);
-  return Math.max(0, score - Math.min(total, 30));
+  const b = scoreBreakdown(p);
+  return b ? b.final : null;
 }
 
 function rating(score) {
@@ -91,9 +192,87 @@ function rating(score) {
          score >= 25 ? ['Poor', '#f9a825'] : ['Bad', '#d93025'];
 }
 
-const RISK_COLOR = { high: '#d93025', medium: '#f9a825', low: '#1e8e3e' };
+const CLASS = {
+  high:    { label: 'High risk',          color: '#c62828' },
+  mid:     { label: 'Moderate risk',      color: '#e65100' },
+  low:     { label: 'Low risk',           color: '#a67c00' },
+  none:    { label: 'No risk identified', color: '#1e8e3e' },
+  unrated: { label: 'Not rated',          color: '#6b7785' }
+};
+const ORDER = { high: 0, mid: 1, low: 2, unrated: 3, none: 4 };
+const SRC_LABEL = { EFSA: 'EFSA (EU)', FDA: 'US FDA', state_law: 'Law', OEHHA: 'California OEHHA', peer_reviewed: 'Study',
+                    IARC: 'IARC (WHO)', agency_review: 'Agency review', OFF: 'Open Food Facts' };
 
-// Find better products in the same category (most specific category first)
+function additiveRow(x) {
+  const a = x.info;
+  if (!a) {
+    const e = x.tag.replace('en:', '').toUpperCase();
+    return '<div class="add"><div class="add-sum"><div><b>' + esc(e) + '</b><div class="muted">No rating for this additive yet</div></div>' +
+      '<span class="pill" style="color:' + CLASS.unrated.color + ';border-color:' + CLASS.unrated.color + '">Not rated</span></div></div>';
+  }
+  const cl = CLASS[a.risk_class];
+  const cites = a.citations.map(c => {
+    const link = c.url ? '<a class="ref-link" href="' + esc(c.url) + '" target="_blank" rel="noopener noreferrer">' +
+      (c.url_kind === 'database' ? 'See the list' : 'Read the source') + ' &#8599;</a>' : '';
+    return '<div class="cite"><span class="src">' + esc(SRC_LABEL[c.source] || c.source) + '</span>' +
+      '<div class="finding">' + esc(c.simple || c.finding) + '</div>' + link + '</div>';
+  }).join('');
+  return '<details class="add"><summary class="add-sum">' +
+      '<div><b>' + esc(a.name) + '</b><div class="muted">' + esc(a.e_number) + ' &middot; ' + esc(a.category.replace(/_/g, ' ')) + '</div></div>' +
+      '<div class="pills">' + (a.child_flag ? '<span class="pill child">Child concern</span>' : '') +
+      '<span class="pill" style="color:' + cl.color + ';border-color:' + cl.color + ';background:' + cl.color + '1a">' + cl.label + '</span></div>' +
+    '</summary><div class="add-body">' +
+      (a.child_flag ? '<div class="note">Experts think young children may eat too much of this.</div>' : '') +
+      '<h5>Why it got this rating</h5>' + cites +
+      '<a class="ref-link" href="' + esc(a.permalink) + '" target="_blank" rel="noopener noreferrer">More about this additive &#8599;</a>' +
+    '</div></details>';
+}
+
+// ---- the "i" popup: how a score was calculated ----
+let current = null;     // the product being shown: { name, bd }
+
+function scoreInfoHTML(cur) {
+  const bd = cur.bd, [label, color] = rating(bd.final);
+
+  let h = '<div class="calc-top"><span class="big" style="color:' + color + '">' + bd.final + '</span><span>/100 &nbsp;<b style="color:' + color + '">' + label + '</b></span></div>' +
+    '<div class="scalewrap"><div class="scale"><i style="background:#d93025"></i><i style="background:#f9a825"></i><i style="background:#7cb342"></i><i style="background:#1e8e3e"></i></div>' +
+    '<div class="mark" style="left:' + bd.final + '%"></div></div>' +
+    '<div class="ticks"><span style="left:0">0</span><span style="left:25%">25</span><span style="left:50%">50</span><span style="left:75%">75</span><span style="left:100%">100</span></div>' +
+    '<div class="scale-l"><span>Bad</span><span>Poor</span><span>Good</span><span>Excellent</span></div>';
+
+  // two lines only: the food's points, and what the risky extras take away (the score is the big number above)
+  const FACTORY = { 1: 'Natural, hardly changed', 2: 'A simple cooking ingredient', 3: 'A few factory steps', 4: 'Made in a factory with lots of extras' };
+  const g = bd.label.slice(-1), n = Number(bd.label.replace(/\D/g, ''));
+  const why = bd.nutri
+    ? 'Health grade ' + g + (g === 'A' ? ', the best grade.' : '. The best grade, A, earns 90.')
+    : (FACTORY[n] || 'Made in a factory') + (n === 1 ? ', the best.' : '. Natural food earns 90.');
+  const risky = bd.items.filter(i => i.points > 0);
+  let extras;
+  if (addFailed) extras = 'We could not load the list of extras';
+  else if (!bd.items.length) extras = 'No extras in this food, so nothing is taken away';
+  else if (!risky.length) extras = 'None of the extras worry us, so nothing is taken away';
+  else extras = risky.map(i => esc(i.name) + ' <b>&minus;' + i.points + '</b>').join('<br>') +
+    (bd.capped ? '<br>The most we take away is 40' : '');
+  const floor = bd.base - bd.applied < 0 ? '<div class="why">' + bd.base + ' &minus; ' + bd.applied + ' is below 0, so the score is 0</div>' : '';
+  h += '<table class="calc"><tr><th>What we count</th><th class="v">Points</th></tr>' +
+    '<tr><td><b style="color:#1e8e3e">Good</b><div class="why">' + why + '</div></td><td class="v">' + bd.base + '</td></tr>' +
+    '<tr><td><b style="color:#d93025">Bad</b><div class="why">' + extras + '</div>' + floor + '</td><td class="v">' + (bd.applied ? '&minus;' + bd.applied : '0') + '</td></tr>' +
+    '</table>';
+  return h;
+}
+
+function openScoreInfo() {
+  if (!current) return;
+  $('modal-body').innerHTML = scoreInfoHTML(current);
+  $('modal').hidden = false;
+  document.body.style.overflow = 'hidden';
+  $('modal-close').focus();
+}
+function closeScoreInfo() {
+  $('modal').hidden = true;
+  document.body.style.overflow = '';
+}
+
 async function findAlternatives(p, myScore) {
   const cats = (p.categories_tags || []).slice().reverse().slice(0, 3);
   for (const cat of cats) {
@@ -116,6 +295,7 @@ async function check(code) {
   if (code.length === 12) code = '0' + code;   // USA UPC-A -> EAN-13
   $('status').textContent = 'Looking up ' + code + '...';
   $('out').innerHTML = '';
+  await dataReady;
 
   try {
     const data = await (await fetch(API + 'product/' + code + '.json?fields=' + FIELDS)).json();
@@ -124,34 +304,43 @@ async function check(code) {
     p.code = code;
     $('status').textContent = '';
 
-    const score = scoreProduct(p);
+    const bd = scoreBreakdown(p);
+    const score = bd ? bd.final : null;
+    current = { name: p.product_name || code, bd };
     const [label, color] = score === null ? ['Not enough data', '#8895a1'] : rating(score);
     const img = p.image_front_small_url ? '<img src="' + esc(p.image_front_small_url) + '">' : '';
     let html = '<div class="card"><div class="prod">' +
-      '<div class="score" style="border-color:' + color + ';color:' + color + '">' +
+      '<div class="scorewrap"><div class="score" style="border-color:' + color + ';color:' + color + '">' +
         (score === null ? '?' : score + '<small>/100</small>') + '</div>' +
+        (bd ? '<button class="info" data-tip="How is this score calculated?" aria-label="How is this score calculated?">i</button>' : '') + '</div>' +
       '<div><b>' + esc(p.product_name || code) + '</b><br>' +
       '<span class="muted">' + esc(p.brands || '') + '</span><br>' +
       '<b style="color:' + color + '">' + label + '</b></div>' + img +
       '</div></div>';
 
-    const adds = p.additives_tags || [];
-    html += '<div class="card"><h4>Additives (' + adds.length + ')</h4>';
-    if (!adds.length) html += '<span class="muted">None found</span>';
-    else html += adds.map(t => {
-      const r = additiveRisk(t), c = RISK_COLOR[r];
-      return '<span class="chip" style="color:' + c + ';border-color:' + c + ';background:' + c + '1a">' +
-        esc(t.replace('en:', '').toUpperCase()) + ' · ' + r + '</span>';
-    }).join('');
+    const rows = resolveAdditives(p.additives_tags)
+      .sort((x, y) => ORDER[x.info ? x.info.risk_class : 'unrated'] - ORDER[y.info ? y.info.risk_class : 'unrated']);
+    const cnt = {};
+    rows.forEach(x => { const k = x.info ? x.info.risk_class : 'unrated'; cnt[k] = (cnt[k] || 0) + 1; });
+    html += '<div class="card"><h4>Additives (' + rows.length + ')</h4>';
+    if (addFailed) html += '<div class="note">The additive ratings file could not be loaded, so additives are not scored.</div>';
+    if (!rows.length) html += '<span class="muted">None found</span>';
+    else {
+      html += '<div class="counts">' + ['high', 'mid', 'low', 'none', 'unrated'].filter(k => cnt[k]).map(k =>
+        '<span class="pill" style="color:' + CLASS[k].color + ';border-color:' + CLASS[k].color + '">' + cnt[k] + ' ' + CLASS[k].label.toLowerCase() + '</span>').join('') + '</div>';
+      html += rows.map(additiveRow).join('');
+    }
     html += '</div>';
     $('out').innerHTML = html;
 
     if (score !== null && score < 90) {
       $('status').textContent = 'Looking for better alternatives...';
-      const alts = await findAlternatives(p, score);
+      let alts = null;
+      try { alts = await findAlternatives(p, score); } catch (e) { alts = null; }
       $('status').textContent = '';
       let h = '<div class="card"><h4>Better alternatives</h4>';
-      if (!alts.length) h += '<span class="muted">No better product found in this category.</span>';
+      if (alts === null) h += '<span class="muted">Could not look for better products right now. Try again in a minute.</span>';
+      else if (!alts.length) h += '<span class="muted">No better product found in this category.</span>';
       else h += alts.map(a => {
         const [l, c] = rating(a.score);
         return '<div class="alt" data-code="' + esc(a.code) + '">' +
@@ -161,17 +350,21 @@ async function check(code) {
       $('out').insertAdjacentHTML('beforeend', h + '</div>');
     }
   } catch (e) {
-    $('status').textContent = 'Error: ' + e.message;
+    $('status').textContent = 'Could not get the product data (' + e.message + '). Open Food Facts may be busy. Try again in a minute.';
   }
 }
 
 // click an alternative to check it
 $('out').onclick = e => {
+  if (e.target.closest('.info')) { openScoreInfo(); return; }
   const el = e.target.closest('[data-code]');
   if (el) { $('code').value = el.dataset.code; check(el.dataset.code); }
 };
 
 $('go').onclick = () => check($('code').value);
+$('modal-close').onclick = closeScoreInfo;
+$('modal').onclick = e => { if (e.target === $('modal')) closeScoreInfo(); };   // click outside the sheet
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('modal').hidden) closeScoreInfo(); });
 
 const COLORS = { red: '#f44336', yellow: '#ffc107', green: '#00e676' };
 let holdUntil = 0;

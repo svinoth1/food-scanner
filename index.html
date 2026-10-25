@@ -3,13 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Food Scanner</title>
+<title>Additive Free</title>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
 <style>
+  @font-face { font-family: 'Lilita One'; src: url(fonts/LilitaOne.woff2) format('woff2'); font-weight: 400; font-display: swap; }
   * { box-sizing: border-box; }
   body { font-family: system-ui, sans-serif; background: #eef1f4; margin: 0; padding: 16px; color: #1f2933; }
   .wrap { max-width: 420px; margin: auto; }
   h2 { text-align: center; margin: 4px 0 14px; }
+  .foot { text-align: right; margin: 18px 0 8px; font-size: 14px; }
+  .how { display: inline-flex; align-items: center; gap: 6px; color: #1e8e3e; font-weight: 700; text-decoration: none; }
+  .how:hover { text-decoration: underline; }
+  .how-i { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 50%;
+           background: #1e8e3e; color: #fff; font: italic 700 12px Georgia, serif; line-height: 1; }
+  .brand-box { display: flex; align-items: center; justify-content: center; gap: 14px; background: linear-gradient(135deg, #e3f5fd 0%, #ffffff 70%); border: 2px solid #b9dff2; border-radius: 14px;
+               padding: 7px 14px 7px 10px; margin: 0 0 12px; box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+  .logo { width: 66px; height: 66px; flex: none; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,.22)); }
+  /* letters like the logo's: white inside, a coloured outline around them (a different rainbow colour for each letter) */
+  .rb { color: #fff; text-shadow: 2.30px 0.00px 0 var(--o), 2.13px 0.86px 0 var(--o), 1.65px 1.60px 0 var(--o), 0.94px 2.10px 0 var(--o), 0.08px 2.30px 0 var(--o), -0.79px 2.16px 0 var(--o), -1.54px 1.71px 0 var(--o), -2.07px 1.01px 0 var(--o), -2.29px 0.16px 0 var(--o), -2.19px -0.71px 0 var(--o), -1.76px -1.48px 0 var(--o), -1.08px -2.03px 0 var(--o), -0.24px -2.29px 0 var(--o), 0.63px -2.21px 0 var(--o), 1.42px -1.81px 0 var(--o), 1.99px -1.15px 0 var(--o), 2.28px -0.32px 0 var(--o), 0 3px 2px rgba(0,0,0,.35); }
+  .brand-box h2 { margin: 0; text-align: left; font-family: 'Lilita One', 'Arial Black', Impact, sans-serif; font-weight: 400;
+                  text-transform: uppercase; letter-spacing: .03em; font-size: 30px; line-height: 1.2; letter-spacing: .09em; }
   .card { background: #fff; border: 2px solid #cfd6dd; border-radius: 14px; padding: 14px; margin: 14px 0;
           box-shadow: 0 2px 8px rgba(0,0,0,.07); }
   .cam { position: relative; height: 200px; background: #000; border: 3px solid #263238;
@@ -21,6 +34,7 @@
               background: var(--c, #f44336); box-shadow: 0 0 8px 2px var(--c, #f44336);
               animation: scan 1.6s ease-in-out infinite alternate; }
   @keyframes scan { from { top: 0; } to { top: 100%; } }
+  .scan-label { text-align: center; color: #5f6b76; font-size: 14px; margin: 0 0 9px; }
   .input-row { display: flex; gap: 8px; }
   input { flex: 1; padding: 11px; border: 2px solid #b8c1ca; border-radius: 10px; font-size: 16px; min-width: 0; }
   button { padding: 11px 18px; border: 0; border-radius: 10px; background: #263238; color: #fff;
@@ -44,9 +58,10 @@
   .tick { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; margin-right: 5px;
           border-radius: 50%; background: #1e8e3e; color: #fff; font-size: 10px; line-height: 1; }
   .counts { margin-bottom: 8px; }
+  .back { background: #fff; color: #263238; border: 2px solid #cfd6dd; padding: 7px 14px; font-size: 14px; border-radius: 10px; margin: 0 0 2px; }
+  .back:hover { border-color: #263238; }
   .pill { display: inline-block; padding: 3px 9px; border: 1px solid; border-radius: 999px; font-size: 12px;
           font-weight: 700; margin: 2px 4px 2px 0; white-space: nowrap; }
-  .pill.child { color: #6a1b9a; border-color: #6a1b9a; background: #6a1b9a14; }
   .add { border: 2px solid #e1e6eb; border-radius: 10px; margin-top: 8px; background: #fff; }
   .add[open] { border-color: #263238; }
   .add-sum { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 11px;
@@ -80,21 +95,6 @@
            background: #eef1f4; color: #263238; font-size: 16px; line-height: 1; }
   .calc-top { margin: 0 0 2px; font-size: 11px; }
   .calc-top .big { font-size: 26px; font-weight: 800; }
-  .scalewrap { position: relative; margin: 10px 0 2px; }
-  .scale { display: flex; height: 7px; border-radius: 4px; overflow: hidden; }
-  .scale i { flex: 1; }
-  .mark { position: absolute; top: -4px; width: 3px; height: 15px; background: #263238; border-radius: 2px;
-          transform: translateX(-50%); box-shadow: 0 0 0 1.5px #fff; }
-  .ticks { position: relative; height: 14px; margin-top: 3px; font-size: 9px; font-weight: 800; color: #263238; }
-  .ticks span { position: absolute; transform: translateX(-50%); }
-  .ticks span::before { content: ''; position: absolute; top: -4px; left: 50%; width: 2px; height: 3px;
-                        background: #263238; transform: translateX(-50%); }
-  .ticks span:first-child { transform: none; }
-  .ticks span:first-child::before { left: 0; }
-  .ticks span:last-child { transform: translateX(-100%); }
-  .ticks span:last-child::before { left: 100%; }
-  .scale-l { display: flex; font-size: 8px; color: #5f6b76; }
-  .scale-l span { flex: 1; text-align: center; }
   .calc { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 8px; border: 1px solid #cfd6dd;
           border-radius: 8px; overflow: hidden; }
   .calc th { background: #eef2f6; text-align: left; font-size: 8px; text-transform: uppercase; letter-spacing: .05em;
@@ -104,22 +104,40 @@
   .calc tr:last-child td { border-bottom: 0; }
   .calc td.v { text-align: right; font-size: 15px; font-weight: 800; white-space: nowrap; min-width: 40px;
                border-left: 1px solid #cfd6dd; }
+  .ng { border: 1.5px solid #263238; border-radius: 8px; padding: 5px 10px 6px; margin: 8px 0 4px; background: #fff; }
+  .ng-t { text-align: center; font-weight: 800; font-size: 11px; letter-spacing: .06em; color: #111; margin-bottom: 11px; }
+  .ng-strip { display: flex; height: 20px; border-radius: 999px; margin: 0 2px; }
+  .ng-s { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600; }
+  .ng-s:first-child { border-radius: 999px 0 0 999px; }
+  .ng-s:last-child { border-radius: 0 999px 999px 0; }
+  .ng-c { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2; width: 34px; height: 34px; border-radius: 50%;
+          border: 3.5px solid #111; box-shadow: 0 0 0 1.5px #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; }
+  .ng-p { display: flex; margin: 14px 2px 0; }
+  .ng-p span { flex: 1; text-align: center; font-size: 10px; color: #5f6b76; }
   .calc .why { font-size: 9px; color: #5f6b76; font-weight: 400; margin-top: 1px; line-height: 1.35; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h2>🥗 Food Scanner</h2>
+  <div class="brand-box">
+    <img class="logo" src="logo.png" alt="Additive Free logo"
+         onerror="if(!this.dataset.t){this.dataset.t=1;this.src='logo.jpg'}else{this.style.display='none'}">
+    <h2 aria-label="Additive Free"><span class="rb" style="--o:#e0342f">A</span><span class="rb" style="--o:#f57c00">D</span><span class="rb" style="--o:#e9a800">D</span><span class="rb" style="--o:#3da83a">I</span><span class="rb" style="--o:#2a6fdb">T</span><span class="rb" style="--o:#4b3fc7">I</span><span class="rb" style="--o:#8e3fc2">V</span><span class="rb" style="--o:#e0342f">E</span> <span class="rb" style="--o:#f57c00">F</span><span class="rb" style="--o:#e9a800">R</span><span class="rb" style="--o:#3da83a">E</span><span class="rb" style="--o:#2a6fdb">E</span></h2>
+  </div>
   <div class="cam">
     <video id="video" muted playsinline></video>
     <div id="frame"><div class="scanline"></div></div>
   </div>
-  <div class="card input-row">
-    <input id="code" placeholder="or type barcode" inputmode="numeric">
-    <button id="go">Check</button>
+  <div class="card">
+    <div class="scan-label">Scan or type the barcode to get started</div>
+    <div class="input-row">
+      <input id="code" placeholder="Barcode number" inputmode="numeric">
+      <button id="go">Check</button>
+    </div>
   </div>
   <p id="status"></p>
   <div id="out"></div>
+  <div class="foot"><a class="how" href="info.html" target="_blank" rel="noopener"><span class="how-i">i</span>How Additive-Free works</a></div>
 </div>
 
 <div id="modal" class="modal" hidden>
@@ -179,7 +197,6 @@ function scoreBreakdown(p) {
     name: x.info ? x.info.name : x.tag.replace('en:', '').toUpperCase(),
     e: x.info ? x.info.e_number : '',
     cls: x.info ? x.info.risk_class : 'unrated',
-    child: x.info ? x.info.child_flag : false,
     points: x.info ? x.info.points_removed : 0
   })).sort((a, b) => b.points - a.points);
   const raw = items.reduce((sum, i) => sum + i.points, 0), applied = Math.min(raw, 40);
@@ -224,10 +241,9 @@ function additiveRow(x) {
   }).join('');
   return '<details class="add"><summary class="add-sum">' +
       '<div><b>' + esc(a.name) + '</b><div class="muted">' + esc(a.e_number) + ' &middot; ' + esc(a.category.replace(/_/g, ' ')) + '</div></div>' +
-      '<div class="pills">' + (a.child_flag ? '<span class="pill child">Child concern</span>' : '') +
+      '<div class="pills">' +
       '<span class="pill" style="color:' + cl.color + ';border-color:' + cl.color + ';background:' + cl.color + '1a">' + cl.label + '</span></div>' +
     '</summary><div class="add-body">' +
-      (a.child_flag ? '<div class="note">Experts think young children may eat too much of this.</div>' : '') +
       '<h5>Why it got this rating</h5>' + cites +
     '</div></details>';
 }
@@ -237,19 +253,24 @@ let current = null;     // the product being shown: { name, bd }
 
 function scoreInfoHTML(cur) {
   const bd = cur.bd, [label, color] = rating(bd.final);
-
-  let h = '<div class="calc-top"><span class="big" style="color:' + color + '">' + bd.final + '</span><span>/100 &nbsp;<b style="color:' + color + '">' + label + '</b></span></div>' +
-    '<div class="scalewrap"><div class="scale"><i style="background:#d93025"></i><i style="background:#f9a825"></i><i style="background:#7cb342"></i><i style="background:#1e8e3e"></i></div>' +
-    '<div class="mark" style="left:' + bd.final + '%"></div></div>' +
-    '<div class="ticks"><span style="left:0">0</span><span style="left:25%">25</span><span style="left:50%">50</span><span style="left:75%">75</span><span style="left:100%">100</span></div>' +
-    '<div class="scale-l"><span>Bad</span><span>Poor</span><span>Good</span><span>Excellent</span></div>';
-
-  // two lines only: the food's points, and what the risky extras take away (the score is the big number above)
   const FACTORY = { 1: 'Natural, hardly changed', 2: 'A simple cooking ingredient', 3: 'A few factory steps', 4: 'Made in a factory with lots of extras' };
   const g = bd.label.slice(-1), n = Number(bd.label.replace(/\D/g, ''));
+
+  // the one graph: the scale this food was graded on, with its own grade (or level) in the big ringed circle
+  const GRADES = [['A', '#3a8a4a', 90], ['B', '#8dc63f', 75], ['C', '#eea43b', 55], ['D', '#d9622b', 35], ['E', '#b3302b', 15]];
+  // no official Nutri-Score for this food? then show the closest grade to the points its processing level gives
+  const closest = GRADES.reduce((best, x) => Math.abs(x[2] - bd.base) < Math.abs(best[2] - bd.base) ? x : best)[0];
+  const items = GRADES, sel = bd.nutri ? g : closest;
+  const picture = '<div class="ng"><div class="ng-t">' + 'NUTRI-GRADE' + '</div><div class="ng-strip">' +
+    items.map(x => '<span class="ng-s" style="background:' + x[1] + '">' + (x[0] === sel ? '<b class="ng-c" style="background:' + x[1] + '">' + x[0] + '</b>' : x[0]) + '</span>').join('') +
+    '</div><div class="ng-p">' + items.map(x => '<span>' + x[2] + '</span>').join('') + '</div></div>';
+
+  let h = '<div class="calc-top"><span class="big" style="color:' + color + '">' + bd.final + '</span><span>/100 &nbsp;<b style="color:' + color + '">' + label + '</b></span></div>' + picture;
+
+  // two lines only: the food's points, and what the risky extras take away (the score is the big number above)
   const why = bd.nutri
-    ? 'Health grade ' + g + (g === 'A' ? ', the best grade.' : '. The best grade, A, earns 90.')
-    : (FACTORY[n] || 'Made in a factory') + (n === 1 ? ', the best.' : '. Natural food earns 90.');
+    ? 'Grade ' + g + ' starts at <b>' + bd.base + '</b> points.'
+    : (FACTORY[n] || 'Made in a factory') + '. Level ' + n + ' starts at <b>' + bd.base + '</b> points.';
   const risky = bd.items.filter(i => i.points > 0);
   let extras;
   if (addFailed) extras = 'We could not load the list of extras';
@@ -294,16 +315,33 @@ async function findAlternatives(p, myScore) {
   return [];
 }
 
-async function check(code) {
+// earlier results the Back button can return to, and a ticket number so an old search cannot write over a newer screen
+let backStack = [], requestId = 0;
+const BACK = '<button class="back" type="button">&larr; Back</button>';
+function showBack() { if (backStack.length) $('out').insertAdjacentHTML('afterbegin', BACK); }
+function goBack() {
+  const prev = backStack.pop();
+  if (!prev) return;
+  requestId++;                       // cancel any search that is still running
+  $('out').innerHTML = prev.html;
+  current = prev.current;
+  $('code').value = prev.code;
+  $('status').textContent = '';
+}
+
+async function check(code, keepBack) {
   code = code.trim();
   if (code.length === 12) code = '0' + code;   // USA UPC-A -> EAN-13
+  if (!keepBack) backStack = [];               // a fresh scan starts a fresh trail
+  const myId = ++requestId;
   $('status').textContent = 'Looking up ' + code + '...';
   $('out').innerHTML = '';
   await dataReady;
 
   try {
     const data = await (await fetch(API + 'product/' + code + '.json?fields=' + FIELDS)).json();
-    if (data.status !== 1) { $('status').textContent = 'Barcode ' + code + ': product not found'; return; }
+    if (myId !== requestId) return;
+    if (data.status !== 1) { $('status').textContent = 'Barcode ' + code + ': product not found'; showBack(); return; }
     const p = data.product;
     p.code = code;
     $('status').textContent = '';
@@ -340,11 +378,13 @@ async function check(code) {
     }
     html += '</div>';
     $('out').innerHTML = html;
+    showBack();
 
     if (score !== null && score < 90) {
       $('status').textContent = 'Looking for better alternatives...';
       let alts = null;
       try { alts = await findAlternatives(p, score); } catch (e) { alts = null; }
+      if (myId !== requestId) return;
       $('status').textContent = '';
       let h = '<div class="card"><h4>Better alternatives</h4>';
       if (alts === null) h += '<span class="muted">Could not look for better products right now. Try again in a minute.</span>';
@@ -358,15 +398,23 @@ async function check(code) {
       $('out').insertAdjacentHTML('beforeend', h + '</div>');
     }
   } catch (e) {
-    $('status').textContent = 'Could not get the product data (' + e.message + '). Open Food Facts may be busy. Try again in a minute.';
+    if (myId === requestId) {
+      $('status').textContent = 'Could not get the product data (' + e.message + '). Open Food Facts may be busy. Try again in a minute.';
+      showBack();
+    }
   }
 }
 
 // click an alternative to check it
 $('out').onclick = e => {
   if (e.target.closest('.info')) { openScoreInfo(); return; }
+  if (e.target.closest('.back')) { goBack(); return; }
   const el = e.target.closest('[data-code]');
-  if (el) { $('code').value = el.dataset.code; check(el.dataset.code); }
+  if (el) {
+    backStack.push({ html: $('out').innerHTML, current, code: $('code').value });   // remember where we were
+    $('code').value = el.dataset.code;
+    check(el.dataset.code, true);
+  }
 };
 
 $('go').onclick = () => check($('code').value);

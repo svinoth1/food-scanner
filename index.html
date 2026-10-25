@@ -11,7 +11,7 @@
   body { font-family: system-ui, sans-serif; background: #eef1f4; margin: 0; padding: 16px; color: #1f2933; }
   .wrap { max-width: 420px; margin: auto; }
   h2 { text-align: center; margin: 4px 0 14px; }
-  .foot { text-align: right; margin: 18px 0 8px; font-size: 14px; }
+  .foot { text-align: right; margin: 2px 0 8px; font-size: 14px; }
   .how { display: inline-flex; align-items: center; gap: 6px; color: #1e8e3e; font-weight: 700; text-decoration: none; }
   .how:hover { text-decoration: underline; }
   .how-i { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 50%;
@@ -39,7 +39,8 @@
   input { flex: 1; padding: 11px; border: 2px solid #b8c1ca; border-radius: 10px; font-size: 16px; min-width: 0; }
   button { padding: 11px 18px; border: 0; border-radius: 10px; background: #263238; color: #fff;
            font-size: 16px; cursor: pointer; }
-  #status { text-align: center; color: #5f6b76; min-height: 1.2em; margin: 8px 0; }
+  #status { text-align: center; color: #5f6b76; margin: 0 0 8px; }
+  #status:empty { display: none; }   /* no gap when there is no message */
   .prod { display: flex; gap: 14px; align-items: center; }
   .prod img { width: 64px; height: 64px; object-fit: contain; border: 1px solid #cfd6dd; border-radius: 10px; background: #fff; }
   .score { width: 84px; height: 84px; border-radius: 50%; border: 6px solid; flex: none;

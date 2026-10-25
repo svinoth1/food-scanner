@@ -28,12 +28,24 @@
   .cam { position: relative; height: 200px; background: #000; border: 3px solid #263238;
          border-radius: 14px; overflow: hidden; }
   .cam video { width: 100%; height: 100%; object-fit: cover; }
-  #frame { position: absolute; top: 25%; left: 10%; width: 80%; height: 50%; border: 2px solid #f44336;
+  #frame { position: absolute; top: 25%; left: 10%; width: 80%; height: 50%; border: 2px solid #f44336; display: flex; align-items: center; justify-content: center;
            border-radius: 8px; box-shadow: 0 0 0 999px rgba(0,0,0,.35); overflow: hidden; }
   .scanline { position: absolute; left: 0; width: 100%; height: 2px;
               background: var(--c, #f44336); box-shadow: 0 0 8px 2px var(--c, #f44336);
               animation: scan 1.6s ease-in-out infinite alternate; }
   @keyframes scan { from { top: 0; } to { top: 100%; } }
+  #frame.idle { border-color: rgba(255,255,255,.85); }           /* resting: a white box, no moving line */
+  #frame.idle .scanline { display: none; }
+  /* the Scan button sits inside the barcode box. Press it and it disappears while the app looks for a barcode. */
+  .scan-btn { position: relative; z-index: 2; margin: 0; display: flex; align-items: center; gap: 8px; padding: 9px 22px;
+              border-radius: 999px; background: #1e8e3e; color: #fff; font-size: 17px; font-weight: 700;
+              border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.45); }
+  .scan-btn:hover { background: #197a35; }
+  #frame:not(.idle) .scan-btn { display: none; }                 /* hidden while scanning (and during the green flash) */
+  #frame:not(.idle) { cursor: pointer; }
+  .cam-msg { position: absolute; left: 10px; right: 10px; bottom: 8px; z-index: 3; text-align: center; font-size: 13px; line-height: 1.35;
+             color: #fff; background: rgba(0,0,0,.72); border-radius: 8px; padding: 6px 10px; }
+  .cam-msg:empty { display: none; }
   .scan-label { text-align: center; color: #5f6b76; font-size: 14px; margin: 0 0 9px; }
   .input-row { display: flex; gap: 8px; }
   input { flex: 1; padding: 11px; border: 2px solid #b8c1ca; border-radius: 10px; font-size: 16px; min-width: 0; }
@@ -125,9 +137,16 @@
          onerror="if(!this.dataset.t){this.dataset.t=1;this.src='logo.jpg'}else{this.style.display='none'}">
     <h2 aria-label="Additive Free"><span class="rb" style="--o:#e0342f">A</span><span class="rb" style="--o:#f57c00">D</span><span class="rb" style="--o:#e9a800">D</span><span class="rb" style="--o:#3da83a">I</span><span class="rb" style="--o:#2a6fdb">T</span><span class="rb" style="--o:#4b3fc7">I</span><span class="rb" style="--o:#8e3fc2">V</span><span class="rb" style="--o:#e0342f">E</span> <span class="rb" style="--o:#f57c00">F</span><span class="rb" style="--o:#e9a800">R</span><span class="rb" style="--o:#3da83a">E</span><span class="rb" style="--o:#2a6fdb">E</span></h2>
   </div>
-  <div class="cam">
+  <div class="cam" id="cam">
     <video id="video" muted playsinline></video>
-    <div id="frame"><div class="scanline"></div></div>
+    <div id="frame" class="idle">
+      <div class="scanline"></div>
+      <button id="scanBtn" class="scan-btn" type="button">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 5.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/></svg>
+        Scan
+      </button>
+    </div>
+    <div id="camMsg" class="cam-msg"></div>
   </div>
   <div class="card">
     <div class="scan-label">Scan or type the barcode to get started</div>
@@ -153,7 +172,6 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const API = 'https://world.openfoodfacts.org/api/v2/';
 const FIELDS = 'code,product_name,brands,image_front_small_url,categories_tags,nutriscore_grade,nova_group,additives_tags';
-let lastCode = '';
 
 // Additive ratings: additives-app.json (Sito, sito.kids/additives). Loaded once when the page opens.
 let ADD = {}, addMeta = {}, addFailed = false;
@@ -425,53 +443,119 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('modal'
 
 const COLORS = { red: '#f44336', yellow: '#ffc107', green: '#00e676' };
 let holdUntil = 0;
-function setState(s) {
+function setState(s) {                       // while scanning: red = nothing, yellow = barcode seen but not readable yet, green = read OK
+  $('frame').classList.remove('idle');
   $('frame').style.setProperty('--c', COLORS[s]);
   $('frame').style.borderColor = COLORS[s];
 }
+function setIdle() {                         // resting: a white box and no moving line
+  $('frame').classList.add('idle');
+  $('frame').style.borderColor = '';
+}
 
-let running = false;
+let stream = null, reader = null, scanning = false, scanTimer = null, scanEnds = 0;
+const canvas = document.createElement('canvas');
+
+function camProblem(e) {                    // a clear message inside the camera when the camera cannot start
+  const name = e && e.name;
+  let text;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) text = 'The camera needs a secure page. Open this site with https.';
+  else if (name === 'NotAllowedError' || name === 'SecurityError') text = 'The camera is blocked. Click the camera icon in the address bar, choose Allow, then press Scan again.';
+  else if (name === 'NotFoundError' || name === 'OverconstrainedError') text = 'No camera was found on this device.';
+  else if (name === 'NotReadableError') text = 'The camera is busy. Close other apps that use it, then press Scan again.';
+  else text = 'Could not start the camera' + (e && e.message ? ': ' + e.message : '.');
+  $('camMsg').textContent = text;
+}
+
+// Switch the camera on. This only happens when the Scan button is pressed, never when the page opens.
 async function startCamera() {
-  if (running) return;
-  running = true;
-  if (!window.ZXingBrowser) { running = false; $('status').textContent = 'Scanner library failed to load'; return; }
+  if (stream) return true;
+  $('camMsg').textContent = 'Starting the camera... (allow it if your browser asks)';
   try {
-    // only look for product barcodes (EAN-13, EAN-8, UPC-A, UPC-E) = faster, fewer false reads
-    const hints = new Map([[2, [7, 6, 14, 15]]]);
-    const reader = new ZXingBrowser.BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 100 });
-    const constraints = { video: {
+    stream = await navigator.mediaDevices.getUserMedia({ video: {
       facingMode: 'environment',
       width: { ideal: 1280 }, height: { ideal: 720 },
       advanced: [{ focusMode: 'continuous' }]
-    } };
-    await reader.decodeFromConstraints(constraints, $('video'), (r, err) => {
-      // line color: red = nothing, yellow = barcode seen but not readable yet, green = read OK
-      const now = Date.now();
+    } });
+    $('video').srcObject = stream;
+    await $('video').play();
+    $('camMsg').textContent = '';
+    return true;
+  } catch (e) {
+    stream = null;
+    camProblem(e);
+    return false;
+  }
+}
+
+function stopCamera() {                      // switch the camera off again
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = null;
+  $('video').srcObject = null;
+}
+
+// the Scan button (inside the barcode box): pressing it switches the camera on and looks for a barcode; tapping the box while it scans stops it
+async function toggleScan() {
+  if (scanning) { stopScan(''); return; }
+  if (!window.ZXingBrowser) { $('status').textContent = 'Scanner library failed to load'; return; }
+  if (!(await startCamera())) return;
+  // only look for product barcodes (EAN-13, EAN-8, UPC-A, UPC-E) = faster, fewer false reads
+  if (!reader) reader = new ZXingBrowser.BrowserMultiFormatReader(new Map([[2, [7, 6, 14, 15]]]));
+  scanning = true;
+  scanEnds = Date.now() + 15000;             // give up after 15 seconds
+  holdUntil = 0;
+  setState('red');
+  $('status').textContent = 'Scanning... hold the barcode steady in the box (tap the box to stop)';
+  scanLoop();
+}
+
+function stopScan(message) {
+  scanning = false;
+  clearTimeout(scanTimer);
+  stopCamera();
+  setIdle();
+  $('status').textContent = message;
+}
+
+// while scanning: take a still picture from the camera ten times a second and try to read it
+function scanLoop() {
+  if (!scanning) return;
+  if (Date.now() > scanEnds) { stopScan('Could not read a barcode. Press Scan to try again.'); return; }
+  const v = $('video');
+  if (v.videoWidth) {
+    canvas.width = v.videoWidth;
+    canvas.height = v.videoHeight;
+    canvas.getContext('2d', { willReadFrequently: true }).drawImage(v, 0, 0);
+    try {
+      gotBarcode(reader.decodeFromCanvas(canvas).getText());
+      return;
+    } catch (err) {
       const kind = err && (err.getKind ? err.getKind() : err.name);
-      if (r) {
-        setState('green'); holdUntil = now + 1500;
-      } else if (kind === 'ChecksumException' || kind === 'FormatException') {
+      const now = Date.now();
+      if (kind === 'ChecksumException' || kind === 'FormatException') {
         if (now >= holdUntil) { setState('yellow'); holdUntil = now + 500; }
       } else if (now >= holdUntil) {
         setState('red');
       }
-
-      if (r && r.getText() !== lastCode) {
-        lastCode = r.getText();
-        $('code').value = lastCode;   // show the scanned number in the input box
-        if (navigator.vibrate) navigator.vibrate(100);
-        setTimeout(() => { lastCode = ''; }, 3000);   // allow re-scanning the same item
-        check(lastCode);
-      }
-    });
-    $('status').textContent = '';
-  } catch (e) {
-    running = false;
-    $('status').textContent = 'Camera error: ' + e.message + ' - allow camera access and reload the page';
+    }
   }
+  scanTimer = setTimeout(scanLoop, 100);
 }
 
-startCamera();   // start automatically on page load; scanning is then automatic
+function gotBarcode(text) {
+  scanning = false;
+  clearTimeout(scanTimer);
+  setState('green');                         // flash green, then switch the camera off and rest
+  setTimeout(() => { if (!scanning) { stopCamera(); setIdle(); } }, 1000);
+  if (navigator.vibrate) navigator.vibrate(100);
+  $('code').value = text;                    // show the scanned number in the text box
+  check(text);
+}
+
+$('scanBtn').onclick = e => { e.stopPropagation(); toggleScan(); };
+$('frame').onclick = () => { if (scanning) stopScan(''); };      // tap the box while scanning to stop
+document.addEventListener('visibilitychange', () => { if (document.hidden && scanning) stopScan(''); });
+
 </script>
 </body>
 </html>
